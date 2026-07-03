@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoML Pipeline Builder</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f0f2f5;
+            color: #2c3e50;
+            min-height: 100vh;
+        }
+
+        /* ── Header ── */
+        .header {
+            background: linear-gradient(135deg, #1a252f, #2980b9);
+            color: white;
+            padding: 28px 40px;
+            text-align: center;
+        }
+        .header h1 { font-size: 1.9em; margin-bottom: 6px; }
+        .header p { opacity: 0.8; font-size: 0.92em; }
+
+        /* ── Layout ── */
+        .container {
+            max-width: 900px;
+            margin: 32px auto;
+            padding: 0 20px;
+        }
+
+        /* ── Cards ── */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+        }
+        .card h2 {
+            font-size: 1.15em;
+            color: #1a252f;
+            margin-bottom: 6px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eaecef;
+        }
+        .card-desc {
+            font-size: 0.88em;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            margin-top: 8px;
+            line-height: 1.6;
+        }
+
+        /* ── Steps badge ── */
+        .step-badge {
+            display: inline-block;
+            background: #2980b9;
+            color: white;
+            font-size: 0.75em;
+            font-weight: bold;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        /* ── Form elements ── */
+        .form-row {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            margin-bottom: 16px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            min-width: 200px;
+        }
+        .form-group label {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .form-group input[type="text"] {
+            padding: 10px 14px;
+            border: 1.5px solid #dce1e7;
+            border-radius: 8px;
+            font-size: 0.92em;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .form-group input[type="text"]:focus {
+            border-color: #2980b9;
+        }
+
+        /* ── File upload ── */
+        .file-upload-area {
+            border: 2px dashed #b2c3d4;
+            border-radius: 10px;
+            padding: 28px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f8fafc;
+            margin-bottom: 16px;
+        }
+        .file-upload-area:hover {
+            border-color: #2980b9;
+            background: #eaf4fb;
+        }
+        .file-upload-area.dragover {
+            border-color: #2980b9;
+            background: #eaf4fb;
+        }
+        .file-upload-area .upload-icon {
+            font-size: 2.2em;
+            margin-bottom: 8px;
+        }
+        .file-upload-area p {
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+        .file-upload-area .file-name {
+            margin-top: 8px;
+            font-size: 0.85em;
+            color: #2980b9;
+            font-weight: 600;
+        }
+        input[type="file"] { display: none; }
+
+        /* ── Buttons ── */
+        .btn {
+            padding: 11px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.92em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #2980b9;
+            color: white;
+        }
+        .btn-primary:hover { background: #2471a3; }
+        .btn-primary:disabled {
+            background: #aab;
+            cursor: not-allowed;
+        }
+        .btn-success {
+            background: #2ecc71;
+            color: white;
+        }
+        .btn-success:hover { background: #27ae60; }
+        .btn-outline {
+            background: white;
+            color: #2980b9;
+            border: 1.5px solid #2980b9;
+        }
+        .btn-outline:hover {
+            background: #eaf4fb;
+        }
+
+        /* ── Progress ── */
+        .progress-section {
+            display: none;
+            margin-top: 16px;
+        }
+        .progress-bar-track {
+            background: #ecf0f1;
+            border-radius: 8px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2980b9, #1abc9c);
+            border-radius: 8px;
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+        .progress-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 12px;
+        }
+        .progress-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85em;
+            color: #7f8c8d;
+        }
+        .progress-step.active { color: #2980b9; font-weight: 600; }
+        .progress-step.done { color: #2ecc71; }
+        .step-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ecf0f1;
+            flex-shrink: 0;
+        }
+        .progress-step.active .step-dot { background: #2980b9; }
+        .progress-step.done .step-dot { background: #2ecc71; }
+
+        /* ── Results ── */
+        .results-section { display: none; }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid #eaecef;
+        }
+        .result-icon { font-size: 1.5em; margin-bottom: 6px; }
+        .result-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #2980b9;
+            margin-bottom: 4px;
+        }
+        .result-label {
+            font-size: 0.75em;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 14px;
+            font-size: 0.88em;
+        }
+        .leaderboard-table th {
+            background: #2c3e50;
+            color: white;
+            padding: 9px 12px;
+            text-align: left;
+        }
+        .leaderboard-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .leaderboard-table tr:hover td {
+            background: #f8f9fa;
+        }
+        .best-row td {
+            background: #eafaf1 !important;
+            font-weight: bold;
+            color: #1e8449;
+        }
+
+        .insight-box {
+            background: #fef9e7;
+            border-left: 4px solid #f39c12;
+            border-radius: 8px;
+            padding: 14px 18px;
+            font-size: 0.9em;
+            line-height: 1.7;
+            color: #2c3e50;
+            margin-top: 14px;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        /* ── Predict section ── */
+        .predict-results {
+            display: none;
+            margin-top: 16px;
+        }
+        .prediction-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.87em;
+            margin-top: 14px;
+        }
+        .prediction-table th {
+            background: #2c3e50;
+            color: white;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .prediction-table td {
+            padding: 7px 12px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .prediction-table tr:hover td { background: #f8f9fa; }
+        .conf-high { color: #2ecc71; font-weight: bold; }
+        .conf-mid { color: #f39c12; font-weight: bold; }
+        .conf-low { color: #e74c3c; font-weight: bold; }
+
+        /* ── Alerts ── */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.88em;
+            margin-top: 14px;
+            display: none;
+        }
+        .alert-error {
+            background: #fdecea;
+            border-left: 4px solid #e74c3c;
+            color: #c0392b;
+        }
+        .alert-success {
+            background: #eafaf1;
+            border-left: 4px solid #2ecc71;
+            color: #1e8449;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            text-align: center;
+            color: #aab;
+            font-size: 0.82em;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🤖 AutoML Pipeline Builder</h1>
+    <p>Upload any CSV file and get the best ML model,
+       evaluation report, and predictions automatically.</p>
+</div>
+
+<div class="container">
+
+    <!-- ── STEP 1: Upload & Train ── -->
+    <div class="card">
+        <h2>
+            <span class="step-badge">Step 1</span>
+            Upload Your Dataset & Train
+        </h2>
+        <p class="card-desc">
+            Upload a CSV file and tell us which column
+            you want to predict. We'll handle everything else —
+            cleaning, training, tuning, and reporting.
+        </p>
+
+        <div class="file-upload-area" id="uploadArea"
+             onclick="document.getElementById('csvFile').click()">
+            <div class="upload-icon">📂</div>
+            <p>Click to browse or drag & drop your CSV file here</p>
+            <div class="file-name" id="fileName">
+                No file selected
+            </div>
+        </div>
+        <input type="file" id="csvFile" accept=".csv"
+               onchange="handleFileSelect(this)">
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Target Column Name</label>
+                <input type="text" id="targetCol"
+                       placeholder="e.g. Survived, Price, Churn">
+            </div>
+            <button class="btn btn-primary"
+                    id="trainBtn"
+                    onclick="runPipeline()"
+                    disabled>
+                🚀 Run AutoML Pipeline
+            </button>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-section" id="progressSection">
+            <div class="progress-bar-track">
+                <div class="progress-bar-fill"
+                     id="progressBar"></div>
+            </div>
+            <div class="progress-steps" id="progressSteps">
+                <div class="progress-step" id="step-ingest">
+                    <div class="step-dot"></div>
+                    Reading and validating your data...
+                </div>
+                <div class="progress-step" id="step-eda">
+                    <div class="step-dot"></div>
+                    Analyzing data patterns...
+                </div>
+                <div class="progress-step" id="step-preprocess">
+                    <div class="step-dot"></div>
+                    Cleaning and preparing data...
+                </div>
+                <div class="progress-step" id="step-train">
+                    <div class="step-dot"></div>
+                    Training 7 ML models...
+                </div>
+                <div class="progress-step" id="step-tune">
+                    <div class="step-dot"></div>
+                    Fine-tuning best models...
+                </div>
+                <div class="progress-step" id="step-report">
+                    <div class="step-dot"></div>
+                    Generating your report...
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-error" id="trainError"></div>
+    </div>
+
+    <!-- ── STEP 2: Results ── -->
+    <div class="card results-section" id="resultsSection">
+        <h2>
+            <span class="step-badge">Step 2</span>
+            Results
+        </h2>
+
+        <div class="result-grid" id="resultGrid"></div>
+
+        <h3 style="font-size:1em; margin-bottom:6px;
+                   color:#2c3e50;">
+            Model Leaderboard
+        </h3>
+        <p style="font-size:0.82em; color:#7f8c8d;
+                  margin-bottom:8px;">
+            All 7 models tested and ranked by performance.
+        </p>
+        <table class="leaderboard-table" id="leaderboardTable">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Model</th>
+                    <th>Score</th>
+                    <th>Std Dev</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboardBody"></tbody>
+        </table>
+
+        <div class="insight-box" id="insightBox"></div>
+
+        <div class="action-row">
+            <button class="btn btn-success"
+                    id="viewReportBtn"
+                    onclick="viewReport()">
+                📊 View Full Report
+            </button>
+            <button class="btn btn-outline"
+                    id="downloadReportBtn"
+                    onclick="downloadReport()">
+                ⬇️ Download Report
+            </button>
+        </div>
+    </div>
+
+    <!-- ── STEP 3: Predict ── -->
+    <div class="card results-section" id="predictCard">
+        <h2>
+            <span class="step-badge">Step 3</span>
+            Predict on New Data
+        </h2>
+        <p class="card-desc">
+            Upload a new CSV with the same columns
+            (without the target column) to get predictions.
+        </p>
+
+        <div
